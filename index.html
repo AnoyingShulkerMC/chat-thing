@@ -23,6 +23,7 @@
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
       $(function () {
+        var typing = false;
         var socket = io();
         $('form').submit(function(){
           socket.emit('chat message', $('#m').val());
@@ -33,6 +34,25 @@
           $('#messages').append($('<li>').text(msg));
           window.scrollTo(0, document.body.scrollHeight);
         });
+        $('#m').on('input', () => {
+          
+        })
+        var last;
+        function updateTyping() {
+          if(!typing) {
+            typing = true;
+            socket.emit('typing')
+          }
+          last = (new Date()).getTime();
+          setTimeout(() => {
+            var typingTimer = (new Date()).getTime();
+            var timeDiff = typingTimer - last;
+            if(timeDiff >= 1000 && typing) {
+              socket.emit("not typing");
+              typing = false;
+            }
+          })
+        }
       });
     </script>
   </body>
