@@ -6,7 +6,7 @@ var WebSocket = require("ws")
 var port = process.env.PORT || 3000;
 var resuming = false;
 var continue_id = null
-var token = "NzUwMTcxNjk5MzAzMTUzNzU5.X02p1g.ZE-KDF6LMdc1nPQ63OWGvaEKoUw"
+var token = ""
 var typing = false;
 var session_id = null;
 app.get('/', function(req, res){
