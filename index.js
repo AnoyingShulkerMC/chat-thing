@@ -18,8 +18,9 @@ con.on("close", () => {
   io.emit("chat message","Closed. resuming")
   resuming = true
   con = new WebSocket("wss://gateway.discord.gg/?v=6&encoding=json");
+  con.on("message", conhandler)
 })
-con.on("message", d => {
+function conhandler(d){
   var msg = JSON.parse(d)
   
   switch(msg.op){
@@ -46,9 +47,9 @@ con.on("message", d => {
           d: {
             token: token,
             session_id: session_id,
-            seq: seq
+            seq: continue_id
           }
-	}))
+        }))
       }
     case 0:
       continue_id = msg.s
@@ -60,7 +61,8 @@ con.on("message", d => {
         io.emit("chat message", "Resumed")
       }
   }
-})
+}
+con.on("message", conhandler)
 io.on('connection', function(socket){
   socket.on('not typing', () => {
     if(typing){
@@ -85,7 +87,7 @@ io.on('connection', function(socket){
       typing = true;
       var options = {
         host: 'discord.com',
-	      port: 443,
+	port: 443,
         path: '/api/channels/752681015331520572/typing',
         method: 'POST',
         headers: {
