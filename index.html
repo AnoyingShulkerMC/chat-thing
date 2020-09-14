@@ -35,7 +35,7 @@
           window.scrollTo(0, document.body.scrollHeight);
         });
         $('#m').on('input', () => {
-          
+          updateTyping();
         })
         var last;
         function updateTyping() {
@@ -47,13 +47,14 @@
           setTimeout(() => {
             var typingTimer = (new Date()).getTime();
             var timeDiff = typingTimer - last;
-            if(timeDiff >= 1000 && typing) {
+            if(timeDiff >= 250 && typing) {
               socket.emit("not typing");
               typing = false;
             }
-          })
+          }, 250)
         }
       });
     </script>
   </body>
 </html>
+
