@@ -41,14 +41,14 @@ con.on("message", d => {
       }))
       if (resuming) {
         resuming = false;
-        con.send(JSON.stringify(
+        con.send(JSON.stringify({
           op: 6,
           d: {
             token: token,
             session_id: session_id,
             seq: seq
           }
-        ))
+	}))
       }
     case 0:
       continue_id = msg.s
