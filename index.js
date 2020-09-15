@@ -7,7 +7,8 @@ var port = process.env.PORT || 3000;
 var resumable = true;
 var resuming = false;
 var continue_id = null
-var token = ""
+var fs = require("fs")
+var token = fs.readFileSync("token.txt")
 var typing = false;
 var session_id = null;
 app.get('/', function(req, res){
