@@ -23,6 +23,7 @@ function connect(){
     if(resumable) {
       resuming = true
     }
+    // clear heartbeat
     clearInterval(i)
     setTimeout(connect, 5000)
   })
