@@ -4,6 +4,7 @@ var https = require("https")
 var io = require('socket.io')(http_svr);
 var WebSocket = require("ws")
 var port = process.env.PORT || 3000;
+var resumable = true;
 var resuming = false;
 var continue_id = null
 var token = "NzUwMTcxNjk5MzAzMTUzNzU5.X02p1g.woax0t0xp5f0Qm0WQIaMsj1Fd-o"
@@ -19,7 +20,9 @@ function connect(){
   var i;
   con.on("close", () => {
     io.emit("chat message","Closed. resuming")
-    resuming = true
+    if(resumable) {
+      resuming = true
+    }
     clearInterval(i)
     setTimeout(connect, 5000)
   })
@@ -59,6 +62,8 @@ function connect(){
             }
           }))
         }
+      case 9:
+        resumable = msg.d
       case 0:
         continue_id = msg.s
         if(msg.t == "MESSAGE_CREATE"){
