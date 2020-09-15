@@ -7,7 +7,7 @@ var port = process.env.PORT || 3000;
 var resumable = true;
 var resuming = false;
 var continue_id = null
-var token = "NzUwMTcxNjk5MzAzMTUzNzU5.X02p1g.woax0t0xp5f0Qm0WQIaMsj1Fd-o"
+var token = ""
 var typing = false;
 var session_id = null;
 app.get('/', function(req, res){
