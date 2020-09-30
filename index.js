@@ -8,13 +8,15 @@ var port = process.env.PORT || 3000;
 var resumable = true;
 var resuming = false;
 var continue_id = null
-var token = ""
+var token = "NzUwMTcxNjk5MzAzMTUzNzU5.X02p1g.LvAJS0J9mGKLPsobeftuRdC3-V8"
 var typing = false;
 var ponged = false;
 var current = "759632453446139904"
 var guild = "728718708079460424"
 var session_id = null;
 const serverPrefix = "/"
+const discordPrefix = ":"
+// TODO: add comments.
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
@@ -85,7 +87,69 @@ function connect(){
       case 0:
         continue_id = msg.s
         if(msg.t == "MESSAGE_CREATE"){
-            io.emit("chat message", `MsgID: ${msg.d.id} | ${msg.d.author.username}#${msg.d.author.discriminator}>` +msg.d.content)
+          io.emit("chat message", `MsgID: ${msg.d.id} | ${msg.d.author.username}#${msg.d.author.discriminator}>` + msg.d.content)
+          if (msg.d.content.substring(0, serverPrefix.length) == discordPrefix) {
+            var args = msg.d.content.substring(1).split(' ')
+            var cmd = args[0]
+            args = args.splice(1)
+            switch (cmd) {
+              case "archive":
+                console.log("archiving")
+                var options = {
+                  hostname: 'discord.com',
+                  port: 443,
+                  path: '/api/channels/'+msg.d.channel_id+'/messages',
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bot ' + token,
+                    'User-Agent': "DiscordBot (discord.js, v12)"
+                  }
+                }
+                var req = https.request(options, res => { })
+                req.write(JSON.stringify({ content: "Moving channel to the archives" }))
+                req.end()
+                var options = {
+                  hostname: 'discord.com',
+                  port: 443,
+                  path: '/api/channels/750194381516177529',
+                  method: 'GET',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bot ' + token,
+                    'User-Agent': "DiscordBot (discord.js, v12)"
+                  }
+                }
+                var req = https.request(options, res => {
+                  
+                  var data = ""
+                  res.on("data", (d) => {
+                    data += d.toString()
+                  })
+                  res.on("end", () => {
+                    var channelObj = JSON.parse(data)
+                    var options = {
+                      hostname: 'discord.com',
+                      port: 443,
+                      path: '/api/channels/' + msg.d.channel_id,
+                      method: 'PATCH',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bot ' + token,
+                        'User-Agent': "DiscordBot (discord.js, v12)",
+                        'X-Audit-Log-Reason': "Archived by " + msg.d.author.username 
+                      }
+                    }// put the specified channel in archive channel and sync perms
+                    var req = https.request(options, res => { })
+                    req.write(JSON.stringify({ parent_id: "750194381516177529",permission_overwrites: channelObj.permission_overwrites }))
+                    req.end()
+                  })
+
+                })
+                
+            }
+            req.end()
+          }
         } if(msg.t == "READY"){
           session_id = msg.d.session_id
           /*var options = {
@@ -105,6 +169,15 @@ function connect(){
             roles: []
           }))
           req.end()*/
+          con.send(JSON.stringify({
+            op: 3,
+            d: {
+              since: null,
+              game: { name: "#ReviveTheAuserCult movement", type: 0 },
+              status: "dnd",
+              afk:false
+            }
+          }))
           console.log("Ready")
         } if(msg.t == "RESUMED") {
           io.emit("chat message", "Resumed")
@@ -194,7 +267,6 @@ io.on('connection', function(socket){
             })
             res.on("end", () => {
               var msg = JSON.parse(data)
-              console.log(msg)
               msg.forEach(e => {
                 resstr += e.name + ":" + e.id + "\n";
               })
