@@ -1,5 +1,7 @@
 var app = require('express')();
 var http_svr = require('http').Server(app);
+var app = require('express')();
+var http_svr = require('http').Server(app);
 var https = require("https")
 var io = require('socket.io')(http_svr);
 var WebSocket = require("ws")
@@ -13,9 +15,15 @@ var typing = false;
 var ponged = false;
 var current = "759632453446139904"
 var guild = "728718708079460424"
+const btoa = require("btoa")
+const fetch = require("node-fetch")
 var session_id = null;
 const serverPrefix = "/"
 const discordPrefix = ":"
+const cfg = {
+  id: '',
+  secret: ''
+};
 // TODO: add comments.
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
@@ -292,12 +300,16 @@ io.on('connection', function(socket){
           req.end()
           io.emit("chat message", "Added reaction")
           return;
+        case 'switchchannel':
+          current = args.join(' ')
+          io.emit("chat message","switched channel")
+          return;
       }
     }
     var options = {
       hostname: 'discord.com',
       port: 443,
-      path: '/api/channels/759632453446139904/messages',
+      path: '/api/channels/' + current + '/messages',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -306,11 +318,65 @@ io.on('connection', function(socket){
       }
     }
     var req= https.request(options, res => {})
-    req.write(JSON.stringify({content: msg}))
+    req.write(JSON.stringify({ content: msg.replace(/\\n/g, "\n")}))
     req.end()
   });
 });
-
+/////////////////////////////////////////////////
+// End of bot console thing
+////////////////////////////////////////////////
+app.get('/secretwebpage', (req, res) => {
+  console.log("request")
+  res.redirect([
+    'https://discord.com/oauth2/authorize',
+    `?client_id=${cfg.id}`,
+    '&scope=guilds.join+identify',
+    '&response_type=code',
+    `&redirect_uri=http://anoyingshulker.ddns.net/authorize`
+  ].join(''));
+});
+function asyncWait(millisecond) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve()
+    }, millisecond)
+  })
+}
+app.get('/authorize', (req, res) => {
+  console.log("authorizing")
+  const code = req.query.code;
+  var cred = btoa(`${cfg.id}:${cfg.secret}`)
+  fetch('https://discord.com/api/oauth2/token', {
+    method: "POST",
+    headers: {
+      'Authorization': `Basic ${cred}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: `grant_type=authorization_code&code=${code}&redirect_uri=${encodeURIComponent("http://anoyingshulker.ddns.net/authorize")}&scope=guilds.join+identify`
+  }).then(async response => {res.redirect(`/guilds?token=${JSON.parse(await response.text()).access_token}`) })
+})
+app.get('/guilds', (req, res) => {
+  res.send("checc your serverz")
+  fetch('https://discord.com/api/users/@me', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${req.query.token}`
+    }
+  }).then(async (response) => {
+    //node-fetch gae
+    var result = JSON.parse(await response.text())
+    fetch(`https://discord.com/api/guilds/713917232580919376/members/${result.id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bot ',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        access_token: req.query.token
+      })
+    })
+  })
+});
 http_svr.listen(port, function(){
   console.log('listening on *:' + port);
 });
