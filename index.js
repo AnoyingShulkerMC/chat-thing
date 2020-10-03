@@ -1,7 +1,5 @@
 var app = require('express')();
 var http_svr = require('http').Server(app);
-var app = require('express')();
-var http_svr = require('http').Server(app);
 var https = require("https")
 var io = require('socket.io')(http_svr);
 var WebSocket = require("ws")
@@ -13,7 +11,7 @@ var continue_id = null
 var token = ""
 var typing = false;
 var ponged = false;
-var current = "759632453446139904"
+var current = "761790637825064960"
 var guild = "728718708079460424"
 const btoa = require("btoa")
 const fetch = require("node-fetch")
@@ -177,6 +175,7 @@ function connect(){
             roles: []
           }))
           req.end()*/
+          
           con.send(JSON.stringify({
             op: 3,
             d: {
@@ -195,6 +194,22 @@ function connect(){
   con.on("message", conhandler)
 }
 connect()
+function makeid(length) {
+  var result = '';
+  var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var charactersLength = characters.length;
+  for (var i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+function isAscii(f) {
+  var content = fs.readFileSync(f)
+  for (var i = 0, len = content.length; i < len; i++) {
+    if(content[i] > 127) return false
+  }
+  return true;
+}
 io.on('connection', function(socket){
   socket.on('not typing', () => {
     if(typing){
@@ -253,6 +268,40 @@ io.on('connection', function(socket){
           req.write(JSON.stringify({ nick: args.join(' ') }))
           req.end()
           io.emit("chat message", "Nickname changed to " + args.join(' '))
+          return;
+        case "attach":
+          var boundary = makeid(10)
+          if (!fs.existsSync(args[0])) return io.emit("chat message", "THe file doesn't exist!")
+          var content1 = `--${boundary}\n` +
+            `Content-Disposition: form-data; name="file"; filename="${args[0]}"\n` +
+            `Content-Type: image/gif\n\n`
+          // escape double quotes
+          var jsonContent = JSON.stringify({
+            content: args[1]
+          })
+          var content2 = `\n--${boundary}\n` +
+            `Content-Disposition: form-data; name="payload_json"\n\n` +
+            `${jsonContent}\n` +
+            `--${boundary}--`
+          var payload = Buffer.concat([
+            new Buffer(content1, "utf-8"),
+            new Buffer(fs.readFileSync(args[0]), isAscii(args[0]) ? "ascii" : "binary"),
+            new Buffer(content2, "utf-8")
+          ])
+          var options = {
+            hostname: 'discord.com',
+            port: 443,
+            path: '/api/channels/' + current + '/messages',
+            method: 'POST',
+            headers: {
+              'Content-Type': 'multipart/form-data; boundary=' + boundary + "; charset=utf-8",
+              'Authorization': 'Bot ' + token,
+              'User-Agent': "DiscordBot (discord.js, v12)"
+            }
+          }
+          var req = https.request(options, res => { res.on("data", (d) => { console.log(d.toString()) }) })
+          req.write(payload)
+          req.end()
           return;
         case 'getemojis':
 
